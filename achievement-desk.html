@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Achievement Desk · Mavlers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='1330 55 560 430'%3E%3Cpath fill='%23FFDA30' d='M1358.9,414.3l211.1-211c7.1-7.1,7.1-18.7,0-25.8l-111.4-111.9c-10.1-10.1-27.4-5.2-30.7,8.7l-79.2,334.3c-1.4,6,5.9,10,10.2,5.7Z'/%3E%3Cpath fill='%23FFDA30' d='M1870.8,465.7l-93-391.1c-3.4-14.2-21-19.2-31.3-8.9l-396.2,396.2c-4.9,4.9.7,13,7,10l330.4-155.5c7.1-3.3,15.5-1.9,21.1,3.7l151.5,151.5c4.4,4.4,11.9.3,10.4-5.8h0Z'/%3E%3C/svg%3E">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{overflow-x:hidden}
+body{font-family:'Montserrat',-apple-system,sans-serif;background:#F2FEDC;color:#434343;min-height:100vh;font-size:12px;overflow-x:hidden}
+
+/* ── Login ── */
+.login-overlay{position:fixed;inset:0;background:#473400;z-index:9999;display:flex;align-items:center;justify-content:center}
+.login-box{background:#fff;border-radius:16px;padding:40px 44px;width:100%;max-width:400px;box-shadow:0 24px 64px rgba(0,0,0,.25);border-top:3px solid #FFDA30;text-align:center}
+.login-eyebrow{font-size:9px;font-weight:700;letter-spacing:.18em;color:#9A9A9A;text-transform:uppercase;margin-bottom:5px}
+.login-title{font-size:20px;font-weight:800;color:#434343;text-transform:uppercase;letter-spacing:.05em;margin-bottom:26px}
+.login-input{width:100%;padding:12px 16px;border:1.5px solid #E2E2E2;border-radius:8px;font-size:13px;font-family:'Montserrat',sans-serif;font-weight:600;color:#434343;outline:none;transition:border-color .2s;text-align:center;letter-spacing:.06em}
+.login-input:focus{border-color:#FFDA30}
+.login-input::placeholder{color:#C0C0C0;font-weight:500;letter-spacing:.02em}
+.login-btn{width:100%;margin-top:12px;padding:13px;background:#FFDA30;border:none;border-radius:8px;font-size:11px;font-weight:800;font-family:'Montserrat',sans-serif;text-transform:uppercase;letter-spacing:.12em;cursor:pointer;color:#111;transition:background .2s}
+.login-btn:hover{background:#FFE870}
+.login-btn:disabled{background:#F2F2F2;color:#9A9A9A;cursor:not-allowed}
+.login-err{margin-top:10px;font-size:10px;font-weight:700;color:#E84040;letter-spacing:.04em;text-transform:uppercase;min-height:14px}
+.login-footer{margin-top:22px;font-size:9px;font-weight:600;color:#9A9A9A;letter-spacing:.08em;text-transform:uppercase}
+
+/* ── Spinner ── */
+.lo{position:fixed;inset:0;background:rgba(242,254,220,.82);z-index:8000;display:none;align-items:center;justify-content:center}
+.lo.show{display:flex}
+.spin{width:36px;height:36px;border:3px solid #FFDA30;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Header ── */
+.hdr{background:#473400}
+.hdr-in{max-width:1440px;margin:0 auto;padding:16px 28px 0}
+.hdr-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px}
+.hdr-brand{display:flex;align-items:center;gap:14px;cursor:pointer;text-decoration:none}
+.hdr-brand:hover .hdr-title{color:#FFDA30}
+.hdr-brand svg{transition:opacity .2s}
+.hdr-brand:hover svg{opacity:.85}
+.hdr-eyebrow{margin-bottom:4px}
+.hdr-el{font-size:9px;font-weight:700;letter-spacing:.16em;color:rgba(255,255,255,.85);text-transform:uppercase}
+.hdr-title{font-size:21px;font-weight:800;color:#fff;letter-spacing:.06em;text-transform:uppercase;transition:color .2s}
+.hdr-sub{font-size:9.5px;font-weight:600;color:rgba(255,255,255,.7);letter-spacing:.1em;margin-top:3px;text-transform:uppercase}
+.hdr-right{display:flex;align-items:center;gap:10px;padding-top:4px;flex-wrap:wrap;justify-content:flex-end}
+.h-status{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.sdot{width:7px;height:7px;border-radius:50%;background:#C0C0C0;flex-shrink:0;transition:background .4s}
+.stxt{font-size:9.5px;font-weight:700;color:rgba(255,255,255,.85);letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:5px}
+.last-sync{font-size:9px;color:rgba(255,255,255,.45);font-weight:500}
+.month-badge{display:inline-flex;align-items:center;background:#5c4200;color:#FFDA30;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:5px 14px;border-radius:6px;min-width:140px;justify-content:center}
+.nav-arrow{padding:5px 9px;border-radius:6px;border:1px solid rgba(255,218,48,.3);background:rgba(255,218,48,.08);color:#FFDA30;font-size:13px;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif;transition:all .2s;line-height:1}
+.nav-arrow:hover{background:rgba(255,218,48,.18);border-color:rgba(255,218,48,.55)}
+.nav-arrow:disabled{opacity:.3;cursor:not-allowed}
+.refresh-btn{padding:5px 11px;border-radius:6px;border:1px solid rgba(255,218,48,.3);background:rgba(255,218,48,.08);color:#FFDA30;font-size:9px;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif;text-transform:uppercase;letter-spacing:.08em;transition:all .2s;white-space:nowrap}
+.refresh-btn:hover{background:rgba(255,218,48,.18);border-color:rgba(255,218,48,.55)}
+.refresh-btn:disabled{opacity:.35;cursor:not-allowed}
+.nexus-btn{padding:5px 11px;border-radius:6px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:rgba(255,255,255,.85);font-size:9px;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif;text-transform:uppercase;letter-spacing:.08em;transition:all .2s;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+.nexus-btn:hover{background:rgba(255,255,255,.14);color:#fff}
+
+/* ── Nav tabs bar ── */
+.nav-tabs-bar{background:#333;border-top:1px solid rgba(255,255,255,.07)}
+.nav-in{max-width:1440px;margin:0 auto;padding:0 28px;display:flex;align-items:center;justify-content:space-between}
+.nav-left{display:flex;align-items:center;gap:0}
+.module-lbl{color:rgba(255,255,255,.45);font-size:9.5px;font-weight:700;letter-spacing:.08em;padding:9px 16px 9px 0;white-space:nowrap;text-transform:uppercase}
+.nav-divider{width:1px;height:18px;background:rgba(255,255,255,.12);flex-shrink:0;margin:0 4px}
+.nav-tab{padding:9px 22px;background:transparent;border:none;border-bottom:2px solid transparent;color:rgba(255,255,255,.45);font-size:9.5px;font-weight:800;font-family:'Montserrat',sans-serif;text-transform:uppercase;letter-spacing:.12em;cursor:pointer;transition:all .2s;white-space:nowrap}
+.nav-tab:hover{color:rgba(255,255,255,.8);background:rgba(255,255,255,.04)}
+.nav-tab.active{color:#FFDA30;border-bottom-color:#FFDA30}
+.nav-right{display:flex;align-items:center;gap:8px;padding:6px 0}
+
+/* ── Yellow rule ── */
+.yellow-rule{height:3px;background:linear-gradient(90deg,#FFDA30,#FFE870 50%,transparent)}
+
+/* ── Error ── */
+.err-wrap{max-width:1440px;margin:0 auto;padding:8px 28px 0}
+.err-bar{background:#2A2A2A;border-bottom:2px solid #FFDA30;padding:10px 14px;font-size:11px;color:#ccc;display:none;border-radius:6px;font-weight:500;margin-bottom:8px}
+.err-bar strong{color:#FFDA30}
+
+/* ── Main ── */
+.main{max-width:1440px;margin:0 auto;padding:0 28px 60px}
+
+/* ── Tab panels ── */
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ── Segment control ── */
+.seg-wrap{display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap;padding-top:20px}
+.seg-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:#696969}
+.seg{display:inline-flex;background:#fff;border:1px solid #E2E2E2;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.seg-btn{padding:6px 18px;background:transparent;border:none;font-size:9.5px;font-weight:800;font-family:'Montserrat',sans-serif;text-transform:uppercase;letter-spacing:.1em;color:#9A9A9A;cursor:pointer;transition:all .18s;white-space:nowrap;border-right:1px solid #E2E2E2}
+.seg-btn:last-child{border-right:none}
+.seg-btn:hover{background:#FFFBEA;color:#473400}
+.seg-btn.active{background:#473400;color:#FFDA30}
+
+/* ── Table card ── */
+.tcard{background:#fff;border-radius:10px;border:1px solid #E2E2E2;border-top:3px solid #FFDA30;overflow:hidden;margin-bottom:24px;box-shadow:0 2px 12px rgba(67,52,0,.06)}
+.tcard-hdr{padding:14px 18px 12px;border-bottom:1px solid #F2F2F2;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.tcard-ttl{font-size:11px;font-weight:800;color:#2E2E2E;text-transform:uppercase;letter-spacing:.06em}
+.twrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+/* ── Achievement table ── */
+.ach-table{width:100%;border-collapse:collapse;font-size:11px;font-family:'Montserrat',sans-serif}
+.ach-table thead th{padding:9px 14px;background:#3B3561;text-align:left;font-size:10px;font-weight:800;color:#FFDA30;text-transform:uppercase;letter-spacing:.06em;border-bottom:none;white-space:nowrap}
+.ach-table thead th.rev-th{text-align:right}
+.ach-table tbody tr{border-bottom:1px solid #F5F5F5}
+.ach-table tbody td{padding:8px 14px;color:#434343;font-weight:600;font-size:10.5px;vertical-align:middle}
+.ach-table tbody tr:last-child td{border-bottom:none}
+.ach-table tbody tr:hover td{background:#FFFBEA!important}
+.ach-table tr.grp-hdr td{background:#F7F7F7;font-size:8px;font-weight:800;color:#9A9A9A;text-transform:uppercase;letter-spacing:.14em;padding:5px 14px;border-top:2px solid #E8E8E8;border-bottom:1px solid #E8E8E8}
+.ach-table tr.grp-hdr:hover td{background:#F7F7F7!important}
+.ach-table tr.sub-row td{background:#FFFBEA;font-weight:800;color:#2E2E2E;border-top:1px solid #FFE870;font-size:10.5px}
+.ach-table tr.sub-row:hover td{background:#FFF3CC!important}
+.ach-table tr.sub-row td.rev-cell{background:#FFDA30;color:#2E2000}
+.ach-table tr.grand-row td{background:#473400!important;font-weight:800;color:#FFDA30!important;font-size:12px;border-top:2px solid #FFDA30}
+.ach-table tr.grand-row:hover td{background:#5A4200!important}
+.ach-table tr.grand-row td.rev-cell{background:#2E2000!important;color:#FFDA30!important;border-left:1px solid #FFDA30}
+.rev-cell{text-align:right!important;font-variant-numeric:tabular-nums;font-weight:700}
+.neg{color:#CC0033!important;font-weight:800!important}
+.owner-cell{padding-left:32px!important;color:#696969;font-weight:600}
+.sub-lbl{font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:#A07A00}
+.ph{text-align:center;padding:60px 20px;color:#9A9A9A;font-weight:600;font-size:11px}
+
+/* ── Status badges ── */
+.status-badge{display:inline-block;padding:2px 10px;border-radius:10px;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+.status-exceeded{background:#0CCE6B;color:#0a3d1f}
+.status-on-track{background:#FFDA30;color:#473400}
+.status-behind{background:#E87B00;color:#fff}
+.status-at-risk{background:#CC0033;color:#fff}
+
+/* ── Footer ── */
+.footer{text-align:center;margin-top:32px;padding-top:16px;border-top:1px solid #E2E2E2;font-size:10px;font-weight:800;color:#434343;letter-spacing:.12em;text-transform:uppercase}
+
+@media(max-width:900px){.hdr-in,.main{padding-left:18px;padding-right:18px}}
+@media(max-width:600px){.hdr-top{flex-direction:column}.hdr-title{font-size:17px}.nav-tab{padding:8px 12px;font-size:8.5px}}
+</style>
+</head>
+<body>
+
+<!-- ════ LOGIN OVERLAY ════ -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <div style="margin-bottom:22px">
+      <svg height="36" viewBox="1330 55 560 430" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#111" d="M1358.9,414.3l211.1-211c7.1-7.1,7.1-18.7,0-25.8l-111.4-111.9c-10.1-10.1-27.4-5.2-30.7,8.7l-79.2,334.3c-1.4,6,5.9,10,10.2,5.7Z"/>
+        <path fill="#111" d="M1870.8,465.7l-93-391.1c-3.4-14.2-21-19.2-31.3-8.9l-396.2,396.2c-4.9,4.9.7,13,7,10l330.4-155.5c7.1-3.3,15.5-1.9,21.1,3.7l151.5,151.5c4.4,4.4,11.9.3,10.4-5.8h0Z"/>
+      </svg>
+    </div>
+    <div class="login-eyebrow" id="login-eyebrow">Mavlers · Sales-Ops</div>
+    <div class="login-title" id="login-title">Achievement Desk</div>
+    <input class="login-input" type="password" id="pw-input" placeholder="Enter access password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Access Dashboard</button>
+    <div class="login-err" id="login-err"></div>
+    <div class="login-footer">Project Nexus · The Live Pulse of Mavlers Revenue</div>
+  </div>
+</div>
+
+<div class="lo" id="lo"><div class="spin"></div></div>
+
+<!-- ════ HEADER ════ -->
+<div class="hdr">
+  <div class="hdr-in">
+    <div class="hdr-top">
+      <a class="hdr-brand" onclick="location.reload()" title="Reload Achievement Desk" role="button">
+        <svg height="28" viewBox="0 0 1921 533.7" xmlns="http://www.w3.org/2000/svg" aria-label="Mavlers">
+          <polygon fill="#FFDA30" points="257.6 161.1 175.8 299.3 92.6 161.1 50.1 161.1 50.1 383.4 98.3 383.4 98.3 252.8 163.4 359.9 186.5 359.9 251.9 250 252.2 383.4 300.5 383.4 299.9 161.1 257.6 161.1"/>
+          <path fill="#FFDA30" d="M418.6,210.1c-27.3,0-54.9,7.3-73.6,20.6l17.8,34.6c12.4-9.8,31.1-15.9,49.2-15.9,26.7,0,39.4,12.4,39.4,33.6h-39.4c-52.1,0-73.3,20.9-73.3,51.1s23.8,51.7,63.8,51.7,42.8-8.3,52.1-23.8v21.3h46.3v-97.4c0-51.7-30.2-75.9-82.2-75.9h-.1ZM451.3,329.3c-5.7,15.6-20,23.2-36.5,23.2s-27.9-8.3-27.9-20.6,7.3-20,30.5-20h34v17.5h-.1Z"/>
+          <polygon fill="#FFDA30" points="615.4 328.8 568.1 212.6 517 212.6 588.7 383.4 639.8 383.4 711.8 212.6 664.2 212.6 615.4 328.8"/>
+          <rect fill="#FFDA30" x="732.2" y="147.9" width="49.5" height="235.5"/>
+          <path fill="#FFDA30" d="M906.1,210.1c-52.1,0-91.1,36.8-91.1,87.9s38.4,87.9,97.4,87.9,54.6-9.5,70.5-27.6l-26.3-28.6c-11.7,11.1-24.8,16.5-42.8,16.5-26,0-44.1-13-48.9-34.3h129.2c.3-4.1,1-9.5,1-13.3,0-54.9-38.7-88.6-88.9-88.6h-.1ZM864.2,283c3.5-21.9,19.7-35.5,42.2-35.5s38.4,14,41.9,35.5h-84.1Z"/>
+          <path fill="#FFDA30" d="M1075.3,235v-22.5h-47.3v170.8h49.5v-80.6c0-32.7,18.1-47.6,45.4-47.6s7,.3,11.1.6v-45.7c-26.3,0-46.7,8.6-58.7,25.1h0Z"/>
+          <path fill="#FFDA30" d="M1199,263.3c0-8.9,9.5-15.9,31.7-15.9s32.4,3.2,49.2,12.7l16.5-35.2c-16.2-9.5-42.2-14.9-65.7-14.9-49.8,0-79,22.9-79,55.2,0,68.2,103.2,39.7,103.2,67.6s-8.6,15.6-31.4,15.6-44.1-6.7-59.4-16.5l-16.5,35.5c15.9,10.5,45.1,18.4,74,18.4,51.1,0,80.6-22.5,80.6-54.3,0-67.3-103.2-39-103.2-68.2h0Z"/>
+          <path fill="#FFDA30" d="M1358.9,414.3l211.1-211c7.1-7.1,7.1-18.7,0-25.8l-111.4-111.9c-10.1-10.1-27.4-5.2-30.7,8.7l-79.2,334.3c-1.4,6,5.9,10,10.2,5.7Z"/>
+          <path fill="#FFDA30" d="M1870.8,465.7l-93-391.1c-3.4-14.2-21-19.2-31.3-8.9l-396.2,396.2c-4.9,4.9.7,13,7,10l330.4-155.5c7.1-3.3,15.5-1.9,21.1,3.7l151.5,151.5c4.4,4.4,11.9.3,10.4-5.8h0Z"/>
+        </svg>
+        <div>
+          <div class="hdr-eyebrow"><span class="hdr-el">Sales Operations</span></div>
+          <div class="hdr-title">Project Nexus</div>
+          <div class="hdr-sub">The Live Pulse of Mavlers Revenue</div>
+        </div>
+      </a>
+      <div class="hdr-right">
+        <div class="h-status">
+          <div class="stxt"><div class="sdot" id="sdot"></div>&nbsp;<span id="stxt">Ready</span></div>
+          <div class="last-sync" id="last-sync"></div>
+        </div>
+        <button class="nav-arrow" id="month-prev" onclick="navigateMonth(-1)">&#8249;</button>
+        <span class="month-badge" id="month-badge">—</span>
+        <button class="nav-arrow" id="month-next" onclick="navigateMonth(1)">&#8250;</button>
+        <button class="refresh-btn" id="rfbtn" onclick="doSync()">⟳ Refresh</button>
+        <a class="nexus-btn" href="/" id="nexus-link">↗ Revenue Pulse</a>
+      </div>
+    </div>
+  </div>
+  <div class="nav-tabs-bar">
+    <div class="nav-in">
+      <div class="nav-left">
+        <span class="module-lbl" id="module-lbl">Achievement Desk</span>
+        <div class="nav-divider"></div>
+        <button class="nav-tab active" id="tab-overall"  onclick="switchTab('overall')">Overall</button>
+        <button class="nav-tab"        id="tab-digital"  onclick="switchTab('digital')">Digital BU</button>
+        <button class="nav-tab"        id="tab-martech"  onclick="switchTab('martech')">MarTech BU</button>
+      </div>
+      <div class="nav-right"></div>
+    </div>
+  </div>
+  <div class="yellow-rule"></div>
+</div>
+
+<div class="err-wrap"><div class="err-bar" id="err-bar"><strong>Error:</strong> <span id="err-msg"></span></div></div>
+
+<!-- ════ MAIN ════ -->
+<div class="main" id="main-content" style="display:none">
+
+  <!-- OVERALL TAB -->
+  <div class="tab-panel active" id="panel-overall">
+    <div class="seg-wrap">
+      <span class="seg-label">View</span>
+      <div class="seg">
+        <button class="seg-btn active" id="tog-ov-digital" onclick="setOverallToggle('digital')">Digital BU</button>
+        <button class="seg-btn"        id="tog-ov-martech" onclick="setOverallToggle('martech')">MarTech BU</button>
+      </div>
+    </div>
+    <div class="tcard">
+      <div class="tcard-hdr"><span class="tcard-ttl">Overall Achievement</span></div>
+      <div class="twrap">
+        <div id="ov-digital-view"><div class="ph">Syncing…</div></div>
+        <div id="ov-martech-view" style="display:none"><div class="ph">Syncing…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIGITAL BU TAB -->
+  <div class="tab-panel" id="panel-digital">
+    <div class="seg-wrap">
+      <span class="seg-label">View</span>
+      <div class="seg">
+        <button class="seg-btn active" id="tog-dig-owners"  onclick="setDigitalToggle('owners')">Owners</button>
+        <button class="seg-btn"        id="tog-dig-service" onclick="setDigitalToggle('service')">Service</button>
+      </div>
+    </div>
+    <div class="tcard">
+      <div class="tcard-hdr"><span class="tcard-ttl" id="dig-card-title">Individual Owner Achievement · Digital BU</span></div>
+      <div class="twrap">
+        <div id="dig-owners-view"><div class="ph">Syncing…</div></div>
+        <div id="dig-service-view" style="display:none"><div class="ph">Syncing…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MARTECH BU TAB -->
+  <div class="tab-panel" id="panel-martech">
+    <div class="seg-wrap">
+      <span class="seg-label">View</span>
+      <div class="seg">
+        <button class="seg-btn active" id="tog-mt-owners"  onclick="setMartechToggle('owners')">Owners</button>
+        <button class="seg-btn"        id="tog-mt-service" onclick="setMartechToggle('service')">Service</button>
+      </div>
+    </div>
+    <div class="tcard">
+      <div class="tcard-hdr"><span class="tcard-ttl" id="mt-card-title">Individual Owner Achievement · MarTech BU</span></div>
+      <div class="twrap">
+        <div id="mt-owners-view"><div class="ph">Syncing…</div></div>
+        <div id="mt-service-view" style="display:none"><div class="ph">Syncing…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">PROJECT NEXUS &nbsp;•&nbsp; BY MAYUR DADLANI &nbsp;•&nbsp; A JAM-STACK APPLICATION</div>
+</div>
+
+<script src="/registry-client.js"></script>
+<script>
+'use strict';
+function $(id){return document.getElementById(id);}
+
+/* ── AUTH ── */
+const CLONE_HEAD=(new URLSearchParams(location.search).get('head')||'').toLowerCase().trim();
+function getAuthKey(h){return h?`nexus_auth_${h}`:'nexus_auth';}
+function checkSSO(){
+  if(localStorage.getItem(getAuthKey(CLONE_HEAD))==='1'){$('login-overlay').style.display='none';return true;}
+  if(CLONE_HEAD==='nevilson'&&localStorage.getItem('nexus_auth')==='1'){$('login-overlay').style.display='none';return true;}
+  return false;
+}
+async function doLogin(){
+  const btn=$('login-btn'),err=$('login-err'),pw=$('pw-input').value.trim();
+  if(!pw){err.textContent='Please enter the access password.';return;}
+  btn.disabled=true;btn.textContent='Verifying…';err.textContent='';
+  try{
+    const res=await fetch('/achievement-desk-auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw,head:CLONE_HEAD})});
+    const data=await res.json();
+    if(data.success){
+      localStorage.setItem(getAuthKey(CLONE_HEAD),'1');
+      $('login-overlay').style.display='none';
+      // IA: initRegistry() is an async network fetch — must await before sync
+      await initRegistry();
+      extendRegistryForAchievementDesk();
+      doSync(true);
+    }else if(res.status===500||data.error){err.textContent='Server config error. Contact Mayur.';}
+    else{err.textContent='Incorrect password. Please try again.';$('pw-input').value='';$('pw-input').focus();}
+  }catch(e){err.textContent='Connection error. Check your network.';}
+  finally{btn.disabled=false;btn.textContent='Access Dashboard';}
+}
+
+/* ── CONSTANTS ──
+   PRATIVA_ID removed — BUType native fallback handles dynamic owners in IA.
+   EXCL_NAMES added — IA has no API-level exclusion filter, applied client-side.
+═══════════════════════════════════════════════════════════════════════════════ */
+const FY_YEAR=2026,FY_MONTH=3;
+const EXCL_NAMES=/wallet|special engagement|inboxarmy|uplers|solomax/i;
+const DIGITAL_GROUPS=[
+  {key:'Jiggyasa Agrawal', label:'Jiggyasa'},
+  {key:'Tanuj Gupta (UK)', label:'Tanuj UK'},
+  {key:'Tanuj Gupta (US)', label:'Tanuj US'},
+  {key:'Nevilson Christan',label:'Nevilson'}
+];
+const MARTECH_GROUPS=[
+  {key:'Jaydeep AU', label:'Jaydeep AU'},
+  {key:'Jaydeep UK', label:'Jaydeep UK'},
+  {key:'Jaydeep US', label:'Jaydeep US'},
+  {key:'Jaydeep NBD',label:'Jaydeep NBD'}
+];
+const CLONE_VISIBLE={
+  jiggyasa:{digital:['Jiggyasa Agrawal'],martech:null},
+  tanuj:   {digital:['Tanuj Gupta (UK)','Tanuj Gupta (US)'],martech:null},
+  nevilson:{digital:['Nevilson Christan'],martech:null},
+  jaydeep: {digital:null,martech:['Jaydeep AU','Jaydeep UK','Jaydeep US','Jaydeep NBD']}
+};
+
+/* ── REGISTRY EXTENSION (no-op in IA build) ─────────────────────────────────
+   The HubSpot version keyed these additional owners by HubSpot numeric IDs.
+   Employee codes for Achievement Desk-only owners (Nevilson Christian,
+   Matt Kelly, Ajeet Dhale, Shradha Shah, Gaurang Padhi) are pending.
+   mergeTargetOwners() via TARGET_GROUP_MAP correctly shows their $0 target
+   rows without registry entries. No-op until codes are confirmed.
+   Jaydeep name correction: handled in registry.js directly for IA.
+═══════════════════════════════════════════════════════════════════════════════ */
+function extendRegistryForAchievementDesk(){
+  // No-op — pending employee codes for AD-only owners
+}
+
+/* ── TARGET GROUP MAP ── */
+const TARGET_GROUP_MAP={
+  "Jiggyasa Agrawal"  :"Jiggyasa Agrawal",
+  "Kunal Gohil"       :"Jiggyasa Agrawal",
+  "Manvi Choumal"     :"Jiggyasa Agrawal",
+  "Prachi Porwal"     :"Jiggyasa Agrawal",
+  "Saquib Khan"       :"Jiggyasa Agrawal",
+  "Flintoff Mehta"    :"Tanuj Gupta (UK)",
+  "Kalgi Shah"        :"Tanuj Gupta (UK)",
+  "Sheldon Fernandes" :"Tanuj Gupta (UK)",
+  "Vikram Sahi"       :"Tanuj Gupta (UK)",
+  "Tanuj Gupta"       :"Tanuj Gupta (US)",
+  "Darshan Modi"      :"Tanuj Gupta (US)",
+  "Kaustubh Agrawal"  :"Tanuj Gupta (US)",
+  "Baspin Thomas"     :"Tanuj Gupta (US)",
+  "Dhaval Damania"    :"Tanuj Gupta (US)",
+  "Hammad Bhaldar"    :"Tanuj Gupta (US)",
+  "Jebin Joy"         :"Tanuj Gupta (US)",
+  "Sourya Ghosh"      :"Tanuj Gupta (US)",
+  "Sudarshan Damani"  :"Tanuj Gupta (US)",
+  "Nevilson Christian":"Nevilson Christan",
+  "Aman Acharya"      :"Nevilson Christan",
+  "Devanshu Kumar"    :"Nevilson Christan",
+  "Dhruti Dave"       :"Nevilson Christan",
+  "Gaurang Padhi"     :"Nevilson Christan",
+  "Malav Modi"        :"Nevilson Christan",
+  "Karan Doshi"       :"Jaydeep AU",
+  "Chintan Doshi"     :"Jaydeep UK",
+  "Jaydeep Soni"      :"Jaydeep UK",
+  "Divya S"           :"Jaydeep UK",
+  "Sakshi Bissa"      :"Jaydeep UK",
+  "Ayush Rathi"       :"Jaydeep US",
+  "Ayush Dhupar"      :"Jaydeep US",
+  "Preeti Thapliyal"  :"Jaydeep US",
+  "Rupali Sindhu"     :"Jaydeep US",
+  "Vinita Raidu"      :"Jaydeep US",
+  "Matt Kelly"        :"Jaydeep NBD",
+  "Ajeet Dhale"       :"Jaydeep NBD",
+  "Kamesh Biniwale"   :"Jaydeep NBD",
+  "Mukund Basita"     :"Jaydeep NBD",
+  "Shradha Shah"      :"Jaydeep NBD",
+};
+
+function mergeTargetOwners(groups,T){
+  for(const[ownerName,tgt]of Object.entries(T)){
+    if(!tgt||tgt<=0)continue;
+    const groupKey=TARGET_GROUP_MAP[ownerName];
+    if(!groupKey||!groups[groupKey])continue;
+    if(!(ownerName in groups[groupKey].owners)){
+      groups[groupKey].owners[ownerName]=0;
+    }
+  }
+  return groups;
+}
+
+/* ── FORMAT ── */
+function fm(n){
+  if(!n&&n!==0)return'$0';
+  const a=Math.abs(Math.round(n)),s=n<0?'-':'';
+  if(a>=1000000)return s+'$'+(a/1000000).toFixed(2)+'M';
+  if(a>=1000)return s+'$'+a.toLocaleString('en-US');
+  return s+'$'+a;
+}
+function nc(n){return n<0?' neg':'';}
+
+/* ── STATUS ── */
+function getStatus(pct){
+  if(pct>=100)return{label:'Exceeded',cls:'status-exceeded'};
+  if(pct>=90) return{label:'On Track',cls:'status-on-track'};
+  if(pct>=70) return{label:'Behind',  cls:'status-behind'};
+  return       {label:'At Risk', cls:'status-at-risk'};
+}
+function statusBadge(pct){
+  if(pct===null)return'—';
+  const s=getStatus(pct);
+  return`<span class="status-badge ${s.cls}">${s.label}</span>`;
+}
+
+/* ── CLONE MODE ── */
+function bootCloneMode(){
+  if(!CLONE_HEAD)return;
+  if(CLONE_HEAD==='jaydeep'){$('tab-digital').style.display='none';setOverallToggle('martech');}
+  else{$('tab-martech').style.display='none';}
+  const LABELS={jiggyasa:'Jiggyasa · Achievement Desk',tanuj:'Tanuj · Achievement Desk',
+                nevilson:'Nevilson · Achievement Desk',jaydeep:'Jaydeep · Achievement Desk'};
+  const first=CLONE_HEAD.charAt(0).toUpperCase()+CLONE_HEAD.slice(1);
+  document.title=(LABELS[CLONE_HEAD]||'Achievement Desk')+' · Mavlers';
+  $('login-eyebrow').textContent=`Mavlers · ${first}'s Dashboard`;
+  const nx=$('nexus-link');if(nx)nx.href=`/?head=${CLONE_HEAD}`;
+}
+function visKeys(bu){
+  if(!CLONE_HEAD)return null;
+  const cfg=CLONE_VISIBLE[CLONE_HEAD];if(!cfg)return null;
+  return cfg[bu]||null;
+}
+
+/* ── TABS & TOGGLES ── */
+function switchTab(tab){
+  ['overall','digital','martech'].forEach(t=>{
+    $('tab-'+t).classList.toggle('active',t===tab);
+    $('panel-'+t).classList.toggle('active',t===tab);
+  });
+}
+function setOverallToggle(val){
+  $('tog-ov-digital').classList.toggle('active',val==='digital');
+  $('tog-ov-martech').classList.toggle('active',val==='martech');
+  $('ov-digital-view').style.display=val==='digital'?'':'none';
+  $('ov-martech-view').style.display=val==='martech'?'':'none';
+}
+function setDigitalToggle(val){
+  $('tog-dig-owners').classList.toggle('active',val==='owners');
+  $('tog-dig-service').classList.toggle('active',val==='service');
+  $('dig-owners-view').style.display=val==='owners'?'':'none';
+  $('dig-service-view').style.display=val==='service'?'':'none';
+  $('dig-card-title').textContent=val==='owners'
+    ?'Individual Owner Achievement · Digital BU':'Service Vertical Achievement · Digital BU';
+}
+function setMartechToggle(val){
+  $('tog-mt-owners').classList.toggle('active',val==='owners');
+  $('tog-mt-service').classList.toggle('active',val==='service');
+  $('mt-owners-view').style.display=val==='owners'?'':'none';
+  $('mt-service-view').style.display=val==='service'?'':'none';
+  $('mt-card-title').textContent=val==='owners'
+    ?'Individual Owner Achievement · MarTech BU':'Service Vertical Achievement · MarTech BU';
+}
+
+/* ── MONTH NAVIGATION ── */
+let FY_MONTHS=[],MONTH_IDX=0;
+function buildFYMonths(){
+  const now=new Date(),months=[],cursor=new Date(FY_YEAR,FY_MONTH,1);
+  while(cursor.getFullYear()<now.getFullYear()||
+       (cursor.getFullYear()===now.getFullYear()&&cursor.getMonth()<=now.getMonth())){
+    const mn=cursor.toLocaleString('en-US',{month:'long'});
+    months.push({val:`${mn.toLowerCase()}-${cursor.getFullYear()}`,lbl:`${mn} ${cursor.getFullYear()}`});
+    cursor.setMonth(cursor.getMonth()+1);
+  }
+  return months;
+}
+function updateMonthBadge(){
+  const m=FY_MONTHS[MONTH_IDX];
+  $('month-badge').textContent=m.lbl;
+  $('month-prev').disabled=(MONTH_IDX===0);
+  $('month-next').disabled=(MONTH_IDX===FY_MONTHS.length-1);
+}
+function navigateMonth(dir){
+  const next=MONTH_IDX+dir;
+  if(next<0||next>=FY_MONTHS.length)return;
+  MONTH_IDX=next;updateMonthBadge();doSync();
+}
+function getCurrentMonth(){return FY_MONTHS[MONTH_IDX]?.val||'';}
+function initMonthNav(){
+  FY_MONTHS=buildFYMonths();
+  const now=new Date(),prev=new Date(now.getFullYear(),now.getMonth()-1,1);
+  const prevVal=`${prev.toLocaleString('en-US',{month:'long'}).toLowerCase()}-${prev.getFullYear()}`;
+  MONTH_IDX=FY_MONTHS.findIndex(m=>m.val===prevVal);
+  if(MONTH_IDX<0)MONTH_IDX=FY_MONTHS.length-1;
+  updateMonthBadge();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   IA DATE HELPERS
+═══════════════════════════════════════════════════════════════ */
+const MFULL_AD=['january','february','march','april','may','june',
+                'july','august','september','october','november','december'];
+const MSHRT_AD=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function monthValToIADates(monthVal){
+  const[mn,yr]=monthVal.split('-');
+  const idx=MFULL_AD.indexOf(mn.toLowerCase());
+  if(idx===-1)throw new Error('Invalid month: '+monthVal);
+  const mm=String(idx+1).padStart(2,'0');
+  const lastDay=new Date(parseInt(yr),idx+1,0).getDate();
+  return{FROMDATE:`01/${mm}/${yr}`,TODATE:`${String(lastDay).padStart(2,'0')}/${mm}/${yr}`};
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   IA FETCH — POST /bookings
+   Replaces fetchDeals() + fetchLineItems() from HubSpot version.
+═══════════════════════════════════════════════════════════════ */
+async function fetchBookings(fromDate,toDate){
+  const res=await fetch('/bookings',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({FROMDATE:fromDate,TODATE:toDate})
+  });
+  if(!res.ok)throw new Error('/bookings '+res.status);
+  const data=await res.json();
+  if(!data.IsSuccess)throw new Error(data.Message||'Invoice App error');
+  return data.Data||[];
+}
+
+/* ── SERVICE CLASSIFIER — inline (not in registry-client.js) ── */
+function classifyLineItem(name){
+  if(!name)return null;
+  const n=name.toLowerCase();
+  if(n.includes("campaign -")||n.includes("campaign manager")||n.includes("campaign operation specialist")||n.includes("sfmc"))return{svc:"Campaign",bu:"MarTech"};
+  if(n.includes("design - asset")||n.includes("design - digital"))return{svc:"Web",bu:"Digital"};
+  if(n.includes("design - "))return{svc:"Design",bu:"MarTech"};
+  if(n.includes("development - email")||n.includes("email coding"))return{svc:"Email",bu:"MarTech"};
+  if(n.includes("email design and coding"))return{svc:"Design",bu:"MarTech"};
+  if(n.includes("development - web")||n.includes("development - lp/hub")||n.includes("development - mobile app")||n.includes("ai & automation - web")||n.includes("dot-net development")||n.includes("operational service - data entry")||n.includes("landing page coding and design")||n.includes("landing page coding")||n.includes("landing page only coding"))return{svc:"Web",bu:"Digital"};
+  if(n.includes("search -")||n.includes("consultancy fees"))return{svc:"Search",bu:"Digital"};
+  return null;
+}
+
+/* ── TARGETS FETCH (unchanged — Google Sheets, not HubSpot) ── */
+async function fetchTargets(month){
+  try{
+    const res=await fetch(`/targets?month=${encodeURIComponent(month)}`);
+    if(!res.ok)return{};
+    const data=await res.json();
+    return data.error?{}:data;
+  }catch(e){
+    console.warn('[Achievement Desk] /targets failed:',e.message);
+    return{};
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MARTECH BUCKET RESOLVER — IA version
+   Keyed by employee code (not HubSpot numeric ID).
+   user_role_invoice_app not available in IA API — skipped.
+═══════════════════════════════════════════════════════════════ */
+function resolveMartechBucket(booking,ownerCode){
+  // Tier 1: MarTech NBD owners (Kamesh + any AD-only NBD) → Jaydeep NBD
+  if((typeof NBD_OWNER_IDS!=='undefined')&&NBD_OWNER_IDS.has(ownerCode)&&
+     (typeof MARTECH_OWNER_IDS!=='undefined')&&MARTECH_OWNER_IDS.has(ownerCode))return'Jaydeep NBD';
+  // Tier 2: Registry fixed geo
+  const fixedGeo=(typeof OWNER_GEO!=='undefined')?OWNER_GEO[ownerCode]:null;
+  if(fixedGeo==='AU')return'Jaydeep AU';
+  if(fixedGeo==='UK')return'Jaydeep UK';
+  if(fixedGeo==='US')return'Jaydeep US';
+  // Tier 3: Booking GEO field (user_role_invoice_app not in IA API)
+  const dealGeo=(typeof resolveGeo!=='undefined')?resolveGeo((booking.GEO||'').trim()):null;
+  if(dealGeo==='AU')return'Jaydeep AU';
+  if(dealGeo==='UK')return'Jaydeep UK';
+  return'Jaydeep US';
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ATTRIBUTION — IA flat booking schema
+   Replaces HubSpot attributeDeals() which used hubspot_owner_id,
+   geo__invoice_app_, user_role_invoice_app, dedup by dealname.
+═══════════════════════════════════════════════════════════════ */
+function attributeDeals(bookings){
+  bookings.forEach(b=>{
+    // Skip zero amounts (allow negatives — credit notes net into totals)
+    const amount=parseFloat(b.BookingAmount||b.BookingamountinUSD||0);
+    if(!amount){b._excl=true;return;}
+
+    // Parse owner employee code from "Name - UPxxxx"
+    const sp=(b.SalesPersonName||'').trim();
+    const spParts=sp.split(' - ');
+    const ownerCode=spParts.length>1?spParts[spParts.length-1].trim():'';
+    const ownerDisplayName=spParts.length>1?spParts.slice(0,-1).join(' - ').trim():sp;
+
+    // BU: registry primary, BUType fallback for unregistered/dynamic owners
+    const isMarTechOwner=(typeof MARTECH_OWNER_IDS!=='undefined')&&MARTECH_OWNER_IDS.has(ownerCode);
+    const isMarTechByType=!isMarTechOwner&&(b.BUType||'').trim()==='Martech BU';
+    b.bu=(isMarTechOwner||isMarTechByType)?'MarTech':'Digital';
+
+    // Geo: registry owner geo first (team geo), then booking GEO (client geo)
+    const ownerGeo=(typeof OWNER_GEO!=='undefined')?OWNER_GEO[ownerCode]:null;
+    const rawGeo=(b.GEO||'').trim();
+    const mappedGeo=(typeof resolveGeo!=='undefined')?resolveGeo(rawGeo):null;
+    b.region=ownerGeo||mappedGeo||'US';
+
+    // Head: registry map, then headFromRegion(), then GEO_Head native fallback
+    b.head=(typeof OWNER_HEAD_MAP!=='undefined'?OWNER_HEAD_MAP[ownerCode]:null)||
+           (typeof headFromRegion!=='undefined'?headFromRegion(b.region,b.bu):null)||'';
+    if(!b.head&&b.GEOHead){
+      const gh=b.GEOHead;
+      if(gh==='Tanuj Gupta')b.head=b.region==='UK'?'Tanuj Gupta (UK)':'Tanuj Gupta (US)';
+      else if(gh==='Jiggyasa Agrawal')b.head='Jiggyasa Agrawal';
+      else if(gh==='Jaydeep Salla'||gh==='Jaydeep Soni')b.head='Jaydeep Salla';
+      else if(gh==='Nevilson Christan')b.head='Nevilson Christan';
+    }
+
+    // MarTech bucket
+    if(b.bu==='MarTech')b.martechBucket=resolveMartechBucket(b,ownerCode);
+
+    b._amt=amount;
+    // Owner display name: registry canonical → SalesPersonName parsed → 'Other'
+    b._owner=(typeof OWNER_NAMES!=='undefined'?OWNER_NAMES[ownerCode]:null)||ownerDisplayName||'Other';
+    b._excl=false;
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DATA BUILDERS — IA version
+   liMap removed: each IA booking is already one flat service record.
+   Service chart uses classifyLineItem(b.Service) directly.
+═══════════════════════════════════════════════════════════════ */
+function emptyGroups(defs){const g={};defs.forEach(({key,label})=>{g[key]={label,owners:{},total:0};});return g;}
+
+function buildBUData(bookings,groupDefs,buVal,keyFn){
+  const groups=emptyGroups(groupDefs);
+  const svcs={Campaign:0,Design:0,Email:0,Search:0,Web:0};
+  bookings.filter(b=>!b._excl&&b.bu===buVal).forEach(b=>{
+    const gKey=keyFn(b);if(!gKey||!groups[gKey])return;
+    const grp=groups[gKey];
+    grp.owners[b._owner]=(grp.owners[b._owner]||0)+b._amt;
+    grp.total+=b._amt;
+    // Service from flat IA field (replaces line-item iteration)
+    const cls=classifyLineItem(b.Service||'');
+    const svc=cls?.svc||null;
+    if(svc&&Object.prototype.hasOwnProperty.call(svcs,svc))svcs[svc]+=b._amt;
+  });
+  return{groups,svcs};
+}
+
+/* ── CONSOLIDATE ── */
+function consolidateGroups(groups){
+  const ownerMap={};
+  for(const[gk,g]of Object.entries(groups)){
+    for(const[owner,rev]of Object.entries(g.owners)){
+      if(!ownerMap[owner])ownerMap[owner]={};
+      ownerMap[owner][gk]=(ownerMap[owner][gk]||0)+rev;
+    }
+  }
+  const out={};
+  for(const[gk,g]of Object.entries(groups))out[gk]={label:g.label,owners:{},total:0};
+  for(const[owner,groupRevs]of Object.entries(ownerMap)){
+    const totalRev=Object.values(groupRevs).reduce((s,r)=>s+r,0);
+    const primaryGk=Object.entries(groupRevs).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1]))[0][0];
+    out[primaryGk].owners[owner]=totalRev;
+    out[primaryGk].total+=totalRev;
+  }
+  return out;
+}
+
+/* ── RENDER (unchanged from HubSpot) ── */
+function renderOverall(targetId,groups,defs,vis,T){
+  T=T||{};
+  groups=mergeTargetOwners(groups,T);
+  let grandRev=0,grandTgt=0,grandAchTracked=0,rows='';
+  defs.forEach(({key,label})=>{
+    if(vis&&!vis.includes(key))return;
+    const g=groups[key];grandRev+=g.total;
+    let headTgt=0,headAchTracked=0;
+    Object.entries(g.owners).forEach(([n,r])=>{
+      const tgt=T[n]||0;
+      if(tgt>0){headTgt+=tgt;headAchTracked+=r;}
+    });
+    grandTgt+=headTgt;grandAchTracked+=headAchTracked;
+    const sr=headTgt>0?Math.round((headAchTracked/headTgt)*100):null;
+    rows+=`<tr>
+      <td>${label}</td>
+      <td class="rev-cell">${headTgt>0?fm(headTgt):'—'}</td>
+      <td class="rev-cell${nc(g.total)}">${fm(g.total)}</td>
+      <td class="rev-cell">${sr!==null?sr+'%':'—'}</td>
+      <td style="padding:6px 14px;text-align:center">${statusBadge(sr)}</td>
+    </tr>`;
+  });
+  const grandSR=grandTgt>0?Math.round((grandAchTracked/grandTgt)*100):null;
+  rows+=`<tr class="grand-row">
+    <td>Grand Total</td>
+    <td class="rev-cell">${grandTgt>0?fm(grandTgt):'—'}</td>
+    <td class="rev-cell">${fm(grandRev)}</td>
+    <td class="rev-cell">${grandSR!==null?grandSR+'%':'—'}</td>
+    <td style="padding:6px 14px;text-align:center">${statusBadge(grandSR)}</td>
+  </tr>`;
+  $(targetId).innerHTML=`<table class="ach-table">
+    <thead><tr>
+      <th>Head</th><th class="rev-th">Target</th>
+      <th class="rev-th">Achieved</th><th class="rev-th">Strike Rate</th>
+      <th style="text-align:center">Status</th>
+    </tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderOwners(targetId,groups,defs,vis,T){
+  T=T||{};
+  groups=consolidateGroups(groups);
+  groups=mergeTargetOwners(groups,T);
+  let grandRev=0,grandTgt=0,grandAchTracked=0,tbody='';
+  defs.forEach(({key,label})=>{
+    if(vis&&!vis.includes(key))return;
+    const g=groups[key];grandRev+=g.total;
+    let groupTgt=0,groupAchTracked=0;
+    tbody+=`<tr class="grp-hdr"><td colspan="6">${label}</td></tr>`;
+    Object.entries(g.owners).sort((a,b)=>b[1]-a[1]).forEach(([n,r])=>{
+      const tgt=T[n]||0;
+      if(tgt>0){groupTgt+=tgt;groupAchTracked+=r;}
+      const sr=tgt>0?Math.round((r/tgt)*100):null;
+      tbody+=`<tr>
+        <td></td>
+        <td class="owner-cell">${n}</td>
+        <td class="rev-cell">${tgt>0?fm(tgt):'—'}</td>
+        <td class="rev-cell${nc(r)}">${fm(r)}</td>
+        <td class="rev-cell">${sr!==null?sr+'%':'—'}</td>
+        <td style="padding:6px 14px;text-align:center">${statusBadge(sr)}</td>
+      </tr>`;
+    });
+    grandTgt+=groupTgt;grandAchTracked+=groupAchTracked;
+    const groupSR=groupTgt>0?Math.round((groupAchTracked/groupTgt)*100):null;
+    tbody+=`<tr class="sub-row">
+      <td></td><td class="sub-lbl">Subtotal</td>
+      <td class="rev-cell">${groupTgt>0?fm(groupTgt):'—'}</td>
+      <td class="rev-cell${nc(g.total)}">${fm(g.total)}</td>
+      <td class="rev-cell">${groupSR!==null?groupSR+'%':'—'}</td>
+      <td style="padding:4px 14px;text-align:center">${statusBadge(groupSR)}</td>
+    </tr>`;
+  });
+  const grandSR=grandTgt>0?Math.round((grandAchTracked/grandTgt)*100):null;
+  tbody+=`<tr class="grand-row">
+    <td colspan="2">Grand Total</td>
+    <td class="rev-cell">${grandTgt>0?fm(grandTgt):'—'}</td>
+    <td class="rev-cell">${fm(grandRev)}</td>
+    <td class="rev-cell">${grandSR!==null?grandSR+'%':'—'}</td>
+    <td style="padding:6px 14px;text-align:center">${statusBadge(grandSR)}</td>
+  </tr>`;
+  $(targetId).innerHTML=`<table class="ach-table">
+    <thead><tr>
+      <th style="width:140px">Head</th><th>Owner</th>
+      <th class="rev-th">Target</th><th class="rev-th">Achieved</th>
+      <th class="rev-th">Strike Rate</th><th style="text-align:center">Status</th>
+    </tr></thead><tbody>${tbody}</tbody></table>`;
+}
+
+function renderService(targetId,svcs){
+  const ORDER=['Campaign','Design','Email','Search','Web'];
+  let grand=0,rows='';
+  ORDER.forEach(s=>{grand+=svcs[s];rows+=`<tr><td>${s}</td><td class="rev-cell${nc(svcs[s])}">${fm(svcs[s])}</td></tr>`;});
+  rows+=`<tr class="grand-row"><td>Grand Total</td><td class="rev-cell">${fm(grand)}</td></tr>`;
+  $(targetId).innerHTML=`<table class="ach-table">
+    <thead><tr><th>Service</th><th class="rev-th">Revenue</th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+
+function renderAll(digitalData,martechData,T){
+  const dVis=visKeys('digital'),mVis=visKeys('martech');
+  renderOverall('ov-digital-view',digitalData.groups,DIGITAL_GROUPS,dVis,T);
+  renderOverall('ov-martech-view',martechData.groups,MARTECH_GROUPS,mVis,T);
+  renderOwners('dig-owners-view', digitalData.groups,DIGITAL_GROUPS,dVis,T);
+  renderService('dig-service-view',digitalData.svcs);
+  renderOwners('mt-owners-view',  martechData.groups,MARTECH_GROUPS,mVis,T);
+  renderService('mt-service-view', martechData.svcs);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SYNC — IA version
+   fetchDeals() + fetchLineItems() replaced with fetchBookings().
+   BookingMonth filter applied (same fix as Nexus Grid).
+═══════════════════════════════════════════════════════════════ */
+let isSyncing=false;
+async function doSync(initial){
+  if(isSyncing)return;isSyncing=true;
+  const rfbtn2=$('rfbtn');if(rfbtn2)rfbtn2.disabled=true;
+  $('lo').classList.add('show');
+  $('sdot').style.background='#FFDA30';$('stxt').textContent='FETCHING…';
+  $('err-bar').style.display='none';
+  const month=getCurrentMonth();
+  try{
+    const{FROMDATE,TODATE}=monthValToIADates(month);
+    const rawBookings=await fetchBookings(FROMDATE,TODATE);
+
+    // Filter by BookingMonth — mirrors Revenue Pulse behaviour exactly
+    const[mn,yr]=month.split('-');
+    const targetBM=`${MSHRT_AD[MFULL_AD.indexOf(mn)]}-${yr}`; // "october-2026" → "Oct-2026"
+    const bookings=rawBookings
+      .filter(b=>(b.BookingMonth||'').trim()===targetBM)
+      .filter(b=>!EXCL_NAMES.test(b.CompanyName||b.Company||''));
+
+    attributeDeals(bookings);
+
+    const targets=await fetchTargets(month);
+
+    const digitalData=buildBUData(bookings,DIGITAL_GROUPS,'Digital',d=>d.head);
+    const martechData=buildBUData(bookings,MARTECH_GROUPS,'MarTech',d=>d.martechBucket);
+
+    renderAll(digitalData,martechData,targets);
+    $('main-content').style.display='block';
+    $('sdot').style.background='#0CCE6B';
+    const validCount=bookings.filter(b=>!b._excl).length;
+    const monthLabel=month.replace('-',' ').replace(/\b\w/g,c=>c.toUpperCase());
+    $('stxt').textContent=`${monthLabel} · ${validCount} BOOKINGS`;
+    const ts=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    $('last-sync').textContent='Synced at '+ts;
+  }catch(e){
+    console.error('[Achievement Desk IA]',e);
+    $('sdot').style.background='#E84040';$('stxt').textContent='SYNC FAILED';
+    $('err-bar').style.display='block';$('err-msg').textContent=e.message;
+    $('main-content').style.display='block';
+  }finally{
+    isSyncing=false;$('lo').classList.remove('show');
+    if(rfbtn2)rfbtn2.disabled=false;
+  }
+}
+
+/* ── BOOT ── */
+document.addEventListener('DOMContentLoaded',async()=>{
+  bootCloneMode();
+  initMonthNav();
+  const authed=checkSSO();
+  if(!authed)return;
+  await initRegistry();
+  extendRegistryForAchievementDesk(); // no-op in IA — pending employee codes
+  await doSync(true);
+});
+</script>
+</body>
+</html>
