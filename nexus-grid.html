@@ -579,7 +579,16 @@ async function doSync(initial){
   const month=getCurrentMonth();
   try{
     const {FROMDATE,TODATE}=monthValToIADates(month);
-    const bookings=await fetchBookings(FROMDATE,TODATE);
+    const rawBookings=await fetchBookings(FROMDATE,TODATE);
+    // Filter by BookingMonth field — mirrors Revenue Pulse doInvoiceSync() behaviour exactly.
+    // Date range fetch (FROMDATE/TODATE) and BookingMonth don't always align: some bookings
+    // have BookingDate in October but BookingMonth "Nov-2026" and vice versa. Filtering here
+    // ensures the Grid shows the same records as Revenue Pulse for the same period.
+    const MSHRT=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const MFULL=['january','february','march','april','may','june','july','august','september','october','november','december'];
+    const [mn,yr]=month.split('-');
+    const targetBM=`${MSHRT[MFULL.indexOf(mn)]}-${yr}`; // "october-2026" → "Oct-2026"
+    const bookings=rawBookings.filter(b=>(b.BookingMonth||'').trim()===targetBM);
     const g=buildGridData(bookings);
     renderGrid(g);
 
