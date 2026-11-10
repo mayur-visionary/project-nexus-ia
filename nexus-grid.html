@@ -367,8 +367,9 @@ async function fetchBookings(fromDate,toDate){
   });
   if(!res.ok)throw new Error('/bookings '+res.status);
   const data=await res.json();
-  // Handle both {bookings:[...]} wrapper and bare array
-  return Array.isArray(data)?data:(data.bookings||data.Bookings||[]);
+  // IA bookings.js response shape: {IsSuccess:bool, Message:string, Data:[...]}
+  if(!data.IsSuccess)throw new Error(data.Message||'Invoice App error');
+  return data.Data||[];
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -407,11 +408,13 @@ function buildGridData(bookings){
     if(b.IsDeleted)return;
 
     // Amount validation — skip zero and negative (credit notes)
-    const amount=parseFloat(b.BookingamountinUSD||b.BookingAmount||0);
+    // IA API field: BookingAmount (confirmed from doInvoiceSync in index.html)
+    const amount=parseFloat(b.BookingAmount||b.BookingamountinUSD||0);
     if(amount<=0)return;
 
     // Skip excluded companies
-    const company=(b.Company||b.CompanyName||'').trim();
+    // IA API field: CompanyName (not Company)
+    const company=(b.CompanyName||b.Company||'').trim();
     if(EXCL_NAMES.test(company))return;
 
     // ── OWNER CODE ──
@@ -428,7 +431,8 @@ function buildGridData(bookings){
     // 3. Final default → 'US'
     const rawGeo=(b.GEO||'').trim();
     const mappedGeo=(typeof resolveGeo!=='undefined')?resolveGeo(rawGeo):null;
-    const geoHead=(b.GEO_Head||b.GEOHead||'').trim();
+    // IA API field: GEOHead (confirmed from doInvoiceSync in index.html)
+    const geoHead=(b.GEOHead||b.GEO_Head||'').trim();
     const resolved=mappedGeo||geoFromHead(geoHead)||'US';
     const geo=resolved==='AU'?'AU':resolved==='UK'?'UK':'US';
 
@@ -556,7 +560,7 @@ async function doSync(initial){
 
     $('main-content').style.display='block';
     $('sdot').style.background='#0CCE6B';
-    const validCount=bookings.filter(b=>!b.IsDeleted&&parseFloat(b.BookingamountinUSD||b.BookingAmount||0)>0).length;
+    const validCount=bookings.filter(b=>!b.IsDeleted&&parseFloat(b.BookingAmount||b.BookingamountinUSD||0)>0).length;
     const monthLabel=month.replace('-',' ').replace(/\b\w/g,c=>c.toUpperCase());
     $('stxt').textContent=`${monthLabel} · ${validCount} BOOKINGS`;
     const ts=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -588,4 +592,3 @@ document.addEventListener('DOMContentLoaded',async()=>{
 
 </body>
 </html>
-
