@@ -801,6 +801,7 @@ async function doSync(initial){
     const[mn,yr]=month.split('-');
     const targetBM=`${MSHRT_AD[MFULL_AD.indexOf(mn)]}-${yr}`; // "october-2026" → "Oct-2026"
     const bookings=rawBookings
+      .filter(b=>!b.IsDeleted)                                          // mirrors Revenue Pulse doInvoiceSync() if(r.IsDeleted)return
       .filter(b=>(b.BookingMonth||'').trim()===targetBM)
       .filter(b=>!EXCL_NAMES.test(b.CompanyName||b.Company||''));
 
