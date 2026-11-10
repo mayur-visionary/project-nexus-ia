@@ -373,6 +373,24 @@ async function fetchBookings(fromDate,toDate){
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   SERVICE CLASSIFIER — copied from index.html (not in registry-client.js)
+   Needed for Digital owner Inter BU determination:
+   Search/Web = Digital pure; Campaign/Email/Design = Inter BU
+═══════════════════════════════════════════════════════════════ */
+function classifyLineItem(name){
+  if(!name)return null;
+  const n=name.toLowerCase();
+  if(n.includes("campaign -")||n.includes("campaign manager")||n.includes("campaign operation specialist")||n.includes("sfmc"))return{svc:"Campaign",bu:"MarTech"};
+  if(n.includes("design - asset")||n.includes("design - digital"))return{svc:"Web",bu:"Digital"};
+  if(n.includes("design - "))return{svc:"Design",bu:"MarTech"};
+  if(n.includes("development - email")||n.includes("email coding"))return{svc:"Email",bu:"MarTech"};
+  if(n.includes("email design and coding"))return{svc:"Design",bu:"MarTech"};
+  if(n.includes("development - web")||n.includes("development - lp/hub")||n.includes("development - mobile app")||n.includes("ai & automation - web")||n.includes("dot-net development")||n.includes("operational service - data entry")||n.includes("landing page coding and design")||n.includes("landing page coding")||n.includes("landing page only coding"))return{svc:"Web",bu:"Digital"};
+  if(n.includes("search -")||n.includes("consultancy fees"))return{svc:"Search",bu:"Digital"};
+  return null;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    GEO HEAD RESOLVER
    Fallback for EU/India and Other bookings where resolveGeo()
    returns null — derive geo bucket from native GEO_Head field.
@@ -408,63 +426,70 @@ function buildGridData(bookings){
     if(b.IsDeleted)return;
 
     // Amount validation — skip zero and negative (credit notes)
-    // IA API field: BookingAmount (confirmed from doInvoiceSync in index.html)
     const amount=parseFloat(b.BookingAmount||b.BookingamountinUSD||0);
     if(amount<=0)return;
 
     // Skip excluded companies
-    // IA API field: CompanyName (not Company)
     const company=(b.CompanyName||b.Company||'').trim();
     if(EXCL_NAMES.test(company))return;
 
     // ── OWNER CODE ──
     // SalesPersonName format: "Sourya Ghosh - UP2074"
-    // Split on ' - ' and take last segment; handles all known edge cases
-    // (BaspinThomas missing space, DIVYA S all-caps, Vikram\tSahi tab, UP0215AM suffix)
-    const sp=(b.SalesPersonName||b.salesperson_name||'').trim();
+    const sp=(b.SalesPersonName||'').trim();
     const spParts=sp.split(' - ');
     const ownerCode=spParts.length>1?spParts[spParts.length-1].trim():'';
 
     // ── GEO RESOLUTION ──
-    // 1. GEO field → resolveGeo() (GEO_MAP: AU/NZ→AU, Netherlands→UK, India→AU, etc.)
-    // 2. If null (EU/India, Other) → GEO_Head field → geoFromHead()
-    // 3. Final default → 'US'
+    // Priority 1: registry fixed geo (OWNER_GEO keyed by employee code) — owner's team region
+    // Priority 2: booking GEO field → resolveGeo() — client's billing region
+    // Priority 3: GEO_Head field → geoFromHead() — head-based inference
+    // Priority 4: default US
+    // NOTE: Priority 1 is critical — without it, missing employee codes fall through
+    // to client GEO (wrong attribution). Remaining geo gaps = missing codes in registry.
+    const ownerGeo=(typeof OWNER_GEO!=='undefined')?OWNER_GEO[ownerCode]:null;
     const rawGeo=(b.GEO||'').trim();
     const mappedGeo=(typeof resolveGeo!=='undefined')?resolveGeo(rawGeo):null;
-    // IA API field: GEOHead (confirmed from doInvoiceSync in index.html)
-    const geoHead=(b.GEOHead||b.GEO_Head||'').trim();
-    const resolved=mappedGeo||geoFromHead(geoHead)||'US';
+    const geoHead=(b.GEOHead||'').trim();
+    const resolved=ownerGeo||mappedGeo||geoFromHead(geoHead)||'US';
     const geo=resolved==='AU'?'AU':resolved==='UK'?'UK':'US';
-
-    // ── BU FROM BUTYPE (native — no registry derivation needed) ──
-    const isMarTechService=(b.BUType||'').trim()==='Martech BU';
 
     // ── OWNER CLASSIFICATION (registry-client.js, keyed by employee code) ──
     const isMarTechOwner=(typeof MARTECH_OWNER_IDS!=='undefined')&&MARTECH_OWNER_IDS.has(ownerCode);
+    // Fallback for unregistered/dynamic owners (e.g. Prativa): use BUType from booking
+    const isMarTechByType=!isMarTechOwner&&(b.BUType||'').trim()==='Martech BU';
+    const isMT=isMarTechOwner||isMarTechByType;
     const isNBDOwner=(typeof NBD_OWNER_IDS!=='undefined')&&NBD_OWNER_IDS.has(ownerCode);
-
-    // ── INTER BU DETERMINATION ──
-    // Digital team owner selling a MarTech service = Inter BU
-    // (IA equivalent of HubSpot Campaign/Email/Design LI split on Digital deals)
-    const isInterBU=!isMarTechOwner&&isMarTechService;
 
     // NBD overrides geo bucket for both Digital and MarTech owners
     const bucket=isNBDOwner?'NBD':geo;
 
-    if(isMarTechOwner){
-      // MarTech owner (AM + NBD): all bookings → MarTech bucket
-      // MarTech NBD (Kamesh): BUType will be "Martech BU", isNBDOwner true → martech.NBD
+    if(isMT){
+      // MarTech team owners (AM + NBD): all bookings → MarTech bucket
+      // Kamesh (MarTech NBD): isNBDOwner=true → martech.NBD
       g.martech[bucket]+=amount;
       g.martech.total+=amount;
-    }else if(isInterBU){
-      // Digital team owner + MarTech service → Inter BU
-      g.interbu[bucket]+=amount;
-      g.interbu.total+=amount;
     }else{
-      // Digital pure (BUType "Digital BU", Digital owner)
-      // Digital NBD (Aman/Devanshu/Malav/Dhruti): bucket='NBD' → digital.NBD
-      g.digital[bucket]+=amount;
-      g.digital.total+=amount;
+      // ── DIGITAL OWNER — INTER BU SPLIT ──
+      // Mirrors index.html buildTrendData() exactly:
+      //   Digital owner + Search/Web service  → Digital pure  → g.digital
+      //   Digital owner + Campaign/Email/Design → Inter BU    → g.interbu
+      //   Digital owner + unclassified service → Digital pure → g.digital
+      //
+      // WHY NOT BUType: BUType = owner's team BU (always "Digital BU" for Digital team),
+      // NOT the service category. classifyLineItem(b.Service) is the correct discriminator.
+      const cls=classifyLineItem(b.Service||'');
+      const svc=cls?cls.svc:null;
+      const isSearchOrWeb=(svc==='Search'||svc==='Web');
+
+      if(!cls||isSearchOrWeb){
+        // Digital pure: Search, Web, or unclassified service
+        g.digital[bucket]+=amount;
+        g.digital.total+=amount;
+      }else{
+        // Inter BU: Campaign, Email, or Design sold by a Digital team owner
+        g.interbu[bucket]+=amount;
+        g.interbu.total+=amount;
+      }
     }
   });
 
