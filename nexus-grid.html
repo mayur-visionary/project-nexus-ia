@@ -425,9 +425,12 @@ function buildGridData(bookings){
     // Skip deleted records
     if(b.IsDeleted)return;
 
-    // Amount validation — skip zero and negative (credit notes)
+    // Skip zero amounts only — negatives (credit notes) must flow through
+    // to net correctly, same as Revenue Pulse. Excluding them causes gross
+    // overage: Grid shows $1,032k vs Revenue Pulse $1,005k (the ~$27k gap
+    // = sum of credit note amounts being incorrectly stripped).
     const amount=parseFloat(b.BookingAmount||b.BookingamountinUSD||0);
-    if(amount<=0)return;
+    if(!amount)return;
 
     // Skip excluded companies
     const company=(b.CompanyName||b.Company||'').trim();
@@ -594,7 +597,7 @@ async function doSync(initial){
 
     $('main-content').style.display='block';
     $('sdot').style.background='#0CCE6B';
-    const validCount=bookings.filter(b=>!b.IsDeleted&&parseFloat(b.BookingAmount||b.BookingamountinUSD||0)>0).length;
+    const validCount=bookings.filter(b=>!b.IsDeleted&&parseFloat(b.BookingAmount||b.BookingamountinUSD||0)!==0).length;
     const monthLabel=month.replace('-',' ').replace(/\b\w/g,c=>c.toUpperCase());
     $('stxt').textContent=`${monthLabel} · ${validCount} BOOKINGS`;
     const ts=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
